@@ -1,0 +1,1 @@
+cqa @ git+ssh://git@github.com/tata1mg/cqa.git@v0.0.1

@@ -1,0 +1,6 @@
+{
+  "NAME": "sample_app",
+  "HOST": "0.0.0.0",
+  "PORT": 6581,
+  "DEBUG": true
+}
