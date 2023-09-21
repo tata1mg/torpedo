@@ -8,7 +8,7 @@ __all__ = [
     "send_response",
     "Request",
     "BaseApiRequest",
-    "SearchAPIRequest",
+    "BaseHttpRequest",
     "Task",
     "TaskExecutor",
     "AsyncTaskResponse",
@@ -16,7 +16,8 @@ __all__ = [
     "APIRequestDecorator"
 ]
 
-from .base_api_request import BaseApiRequest, SearchAPIRequest
+from .base_api_request import BaseApiRequest
+from .base_http_request import BaseHttpRequest
 from .common_utils import CONFIG
 from .exceptions import HTTPInterServiceRequestException
 from .handlers import send_response, get_error_body_response
