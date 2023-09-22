@@ -19,6 +19,8 @@ We prefer pyenv since it helps in managing python versions as well.
 ```
 ### How to use
 Add this library as dependency in your service.
+As of now this project is made public for using in selected projects.
+Soon we will write open source version of this project.
 
 ### Configurations to be provided in service for this library 
 - Create config.json in root directory of project
