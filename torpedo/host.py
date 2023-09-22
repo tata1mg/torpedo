@@ -1,18 +1,20 @@
+from contextlib import suppress
+
+import sentry_sdk
 from sanic import Sanic
 from sanic.log import logger
 from sanic.request import Request
 from sanic.router import Router
-from tortoise.contrib.sanic import register_tortoise
-import sentry_sdk
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
-from contextlib import suppress
+from tortoise.contrib.sanic import register_tortoise
 
 from .clients import CustomElasticAPM, apm_client
 from .common_utils import CONFIG, ServiceAttribute, set_clients_host_for_tests
 from .handlers import CustomExceptionHandler, ping
 from .listeners import set_context_factory
 from .log import patch_logging
-from .middlewares import handle_request_id, add_start_time, add_response_time, global_headers_middleware_factory
+from .middlewares import (add_response_time, add_start_time,
+                          global_headers_middleware_factory, handle_request_id)
 from .wrappers import custom_json, request_params
 
 
@@ -85,9 +87,9 @@ class Host:
     @classmethod
     def register_custom_middlewares(cls, _app):
         for middleware in cls._custom_request_middlewares:
-            _app.register_middleware(middleware, attach_to='request')
+            _app.register_middleware(middleware, attach_to="request")
         for middleware in cls._custom_response_middlewares:
-            _app.register_middleware(middleware, attach_to='response')
+            _app.register_middleware(middleware, attach_to="response")
 
     @classmethod
     def register_exception_handler(cls, _app):

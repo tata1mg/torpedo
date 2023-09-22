@@ -1,21 +1,21 @@
-import logging
-from enum import Enum
 import json
+import logging
 from collections import OrderedDict
+from enum import Enum
 from urllib.parse import urlparse
 
 import aiotask_context as context
 from pythonjsonlogger import jsonlogger
+from sanic.http import Http
 
 from .common_utils import ServiceAttribute
-from sanic.http import Http
 
 
 class LogType(Enum):
-    ACCESS_LOG = 'access'
-    CUSTOM_LOG = 'custom'
-    BACKGROUND_CUSTOM_LOG = 'background'
-    EXTERNAL_CALL_LOG = 'external'
+    ACCESS_LOG = "access"
+    CUSTOM_LOG = "custom"
+    BACKGROUND_CUSTOM_LOG = "background"
+    EXTERNAL_CALL_LOG = "external"
 
 
 class CustomTimeLoggingFormatter(jsonlogger.JsonFormatter):
@@ -25,7 +25,7 @@ class CustomTimeLoggingFormatter(jsonlogger.JsonFormatter):
         self.rename_fields = {
             "levelname": "loglevel",
             "status": "status_code",
-            "asctime": "timestamp"
+            "asctime": "timestamp",
         }
         self._skip_fields.update(
             {
@@ -49,7 +49,7 @@ class CustomTimeLoggingFormatter(jsonlogger.JsonFormatter):
         # record.message can't be more than 100KB in size
         # There are approximately 2000 chars in 100KB
         if len(record.message) > 2000:
-            record.message = record.message[:2000] + '.....'
+            record.message = record.message[:2000] + "....."
 
         # only format time if needed
         if "asctime" in self._required_fields:
@@ -83,7 +83,7 @@ class CustomTimeLoggingFormatter(jsonlogger.JsonFormatter):
             log_record["url"] = urlparse(request.split(" ")[1]).path
             log_record["params"] = urlparse(request.split(" ")[1]).query
 
-        log_record['traceback'] = log_record.pop('exc_info', None)
+        log_record["traceback"] = log_record.pop("exc_info", None)
         log_record.pop("name", "")
         return self.serialize_log_record(log_record)
 
@@ -99,7 +99,7 @@ def patch_logging(config):
     """
 
     # Don't patch if the app is running in DEBUG mode
-    if config.get('DEBUG'):
+    if config.get("DEBUG"):
         return
 
     log_message_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -108,8 +108,9 @@ def patch_logging(config):
     # Set propagate=False for Sanic loggers
     ################################
     import sanic
-    for _sanic_handler in sanic.log.LOGGING_CONFIG_DEFAULTS['loggers'].values():
-        _sanic_handler['propagate'] = False
+
+    for _sanic_handler in sanic.log.LOGGING_CONFIG_DEFAULTS["loggers"].values():
+        _sanic_handler["propagate"] = False
 
     ################################
     # Patch LogRecordFactor of the logging module to include mandatory log parameters
@@ -120,17 +121,17 @@ def patch_logging(config):
         record = old_factory(*args, **kwargs)
 
         try:
-            record.request_id = context.get('X-REQUEST-ID')
+            record.request_id = context.get("X-REQUEST-ID")
         except Exception as e:
-            record.request_id = '-'
+            record.request_id = "-"
 
         # define logtype
         logger_name = record.name
-        if logger_name == 'sanic.access':
+        if logger_name == "sanic.access":
             record.logtype = LogType.ACCESS_LOG.value
-        elif logger_name == 'aiohttp.external':
+        elif logger_name == "aiohttp.external":
             record.logtype = LogType.EXTERNAL_CALL_LOG.value
-        elif record.request_id is None or record.request_id == '-':
+        elif record.request_id is None or record.request_id == "-":
             record.logtype = LogType.BACKGROUND_CUSTOM_LOG.value
         else:
             record.logtype = LogType.CUSTOM_LOG.value
@@ -138,12 +139,12 @@ def patch_logging(config):
         record.service_name = ServiceAttribute.name
         record.branchname = ServiceAttribute.branch_name
         record.current_tag = ServiceAttribute.current_tag
-        record.host = '{}:{}'.format(ServiceAttribute.host, ServiceAttribute.port)
+        record.host = "{}:{}".format(ServiceAttribute.host, ServiceAttribute.port)
 
         # TODO put a check on length of record.message. If the length/size is more than the specified limit, truncate the message
 
         # log record version
-        record.version = 'v2'
+        record.version = "v2"
         return record
 
     logging.setLogRecordFactory(record_factory)
@@ -168,15 +169,15 @@ def patch_logging(config):
             "http_method": "",
             "response_time": "",
             "source_ip": "-",
-            "referer": "-"
+            "referer": "-",
         }
         if req is not None:
-            extra['uri'] = req.path
-            extra['http_method'] = req.method
-            extra['user_agent'] = context.get("X-USER-AGENT")
-            extra['response_time'] = context.get("response_time")
+            extra["uri"] = req.path
+            extra["http_method"] = req.method
+            extra["user_agent"] = context.get("X-USER-AGENT")
+            extra["response_time"] = context.get("response_time")
 
-        logging.getLogger('sanic.access').info("", extra=extra)
+        logging.getLogger("sanic.access").info("", extra=extra)
 
     Http.log_response = log_response_custom
 
@@ -198,7 +199,9 @@ def patch_logging(config):
         """
         Add a handler to the internal cleanup list using a weak reference.
         """
-        from logging import _acquireLock, weakref, _removeHandlerRef, _handlerList, _releaseLock
+        from logging import (_acquireLock, _handlerList, _releaseLock,
+                             _removeHandlerRef, weakref)
+
         _acquireLock()
         try:
             fmt = CustomTimeLoggingFormatter(log_message_format)
@@ -228,7 +231,6 @@ def patch_logging(config):
     # Update formatter in existing handlers
     ################################
     for weak_ref_handler in logging._handlerList:
-        handler= weak_ref_handler()
+        handler = weak_ref_handler()
         fmt = CustomTimeLoggingFormatter(log_message_format)
         handler.setFormatter(fmt)
-

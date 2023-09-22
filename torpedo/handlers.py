@@ -5,20 +5,29 @@ from sanic.exceptions import (Forbidden, MethodNotSupported, NotFound,
 from sanic.handlers import ErrorHandler
 from sanic.log import error_logger
 from sanic.response import json
+from tortoise.exceptions import (BaseORMException, ConfigurationError,
+                                 DBConnectionError, DoesNotExist, FieldError,
+                                 IncompleteInstanceError, IntegrityError,
+                                 MultipleObjectsReturned, NoValuesFetched,
+                                 OperationalError, ParamsError,
+                                 TransactionManagementError, ValidationError)
 
 from .clients import apm_client
 from .common_utils import ServiceAttribute
-from .constants import STATUS_CODE_MAPPING, HTTPStatusCodes, STATUS_CODE_4XX
-from .exceptions import (BadRequestException, HTTPInterServiceRequestException,
-                         JsonDecodeException, NotFoundException, ForbiddenException)
-
-from tortoise.exceptions import (BaseORMException, FieldError, ParamsError, ConfigurationError,
-                                 TransactionManagementError, OperationalError, IntegrityError,
-                                 NoValuesFetched, MultipleObjectsReturned, DoesNotExist,
-                                 IncompleteInstanceError, DBConnectionError, ValidationError)
+from .constants import STATUS_CODE_4XX, STATUS_CODE_MAPPING, HTTPStatusCodes
+from .exceptions import (BadRequestException, ForbiddenException,
+                         HTTPInterServiceRequestException, JsonDecodeException,
+                         NotFoundException)
 
 
-def send_response(data=None, status_code=HTTPStatusCodes.SUCCESS.value, meta=None, body: dict = None, headers=None, purge_response_keys=False):
+def send_response(
+    data=None,
+    status_code=HTTPStatusCodes.SUCCESS.value,
+    meta=None,
+    body: dict = None,
+    headers=None,
+    purge_response_keys=False,
+):
     """
     :param data: final response data
     :param status_code: success status code, default is 200
@@ -67,11 +76,7 @@ def get_error_body_response(error: str, status_code, meta=None, error_id=None):
     else:
         _error = {"message": error, "errors": errors}
 
-    error_result = {
-        "is_success": False,
-        "status_code": status_code,
-        "error": _error
-    }
+    error_result = {"is_success": False, "status_code": status_code, "error": _error}
     if meta:
         error_result["meta"] = meta
     return json(body=error_result, status=status_code)
@@ -82,7 +87,6 @@ async def ping(request):
 
 
 class CustomExceptionHandler(ErrorHandler):
-
     def default(self, request, exception):
         response = None
         if isinstance(exception, (MethodNotSupported, NotFound)):
@@ -92,11 +96,14 @@ class CustomExceptionHandler(ErrorHandler):
                 )
             )
             apm_client.capture_exception()
-            response = get_error_body_response(exception.args[0], exception.status_code,
-                                               error_id=getattr(exception, "error_id", None))
+            response = get_error_body_response(
+                exception.args[0],
+                exception.status_code,
+                error_id=getattr(exception, "error_id", None),
+            )
         elif isinstance(
-                exception,
-                (SanicException, Unauthorized, Forbidden, RequestTimeout, PayloadTooLarge),
+            exception,
+            (SanicException, Unauthorized, Forbidden, RequestTimeout, PayloadTooLarge),
         ):
             error_logger.error(
                 "Handled exception {}, for method {}".format(
@@ -104,8 +111,11 @@ class CustomExceptionHandler(ErrorHandler):
                 )
             )
             apm_client.capture_exception()
-            response = get_error_body_response(exception.args[0], exception.status_code,
-                                               error_id=getattr(exception, "error_id", None))
+            response = get_error_body_response(
+                exception.args[0],
+                exception.status_code,
+                error_id=getattr(exception, "error_id", None),
+            )
         elif isinstance(exception, (BadRequestException, JsonDecodeException)):
             error_logger.info(
                 "Handled exception {}, for method {}".format(
@@ -118,7 +128,9 @@ class CustomExceptionHandler(ErrorHandler):
                 error_id=getattr(exception, "error_id", None),
             )
         elif isinstance(exception, HTTPInterServiceRequestException):
-            _msg = "Inter Service exception {}, for method {}".format(exception.__class__.__name__, request.endpoint)
+            _msg = "Inter Service exception {}, for method {}".format(
+                exception.__class__.__name__, request.endpoint
+            )
             if exception.status_code in STATUS_CODE_4XX:
                 error_logger.info(_msg)
             else:
@@ -126,8 +138,10 @@ class CustomExceptionHandler(ErrorHandler):
                 apm_client.capture_exception()
 
             response = get_error_body_response(
-                exception.error, exception.status_code, exception.meta,
-                error_id=getattr(exception, "error_id", None)
+                exception.error,
+                exception.status_code,
+                exception.meta,
+                error_id=getattr(exception, "error_id", None),
             )
 
         elif isinstance(exception, (NotFoundException)):
@@ -139,12 +153,23 @@ class CustomExceptionHandler(ErrorHandler):
             response = get_error_body_response(
                 exception.error,
                 getattr(exception, "status_code") or HTTPStatusCodes.NOT_FOUND.value,
-                error_id=getattr(exception, "error_id", None)
+                error_id=getattr(exception, "error_id", None),
             )
-        elif isinstance(exception, (FieldError, ParamsError,
-                                    TransactionManagementError, OperationalError, IntegrityError,
-                                    NoValuesFetched, MultipleObjectsReturned, DoesNotExist,
-                                    IncompleteInstanceError, ValidationError)):
+        elif isinstance(
+            exception,
+            (
+                FieldError,
+                ParamsError,
+                TransactionManagementError,
+                OperationalError,
+                IntegrityError,
+                NoValuesFetched,
+                MultipleObjectsReturned,
+                DoesNotExist,
+                IncompleteInstanceError,
+                ValidationError,
+            ),
+        ):
             error_logger.info(
                 "Handled exception {}, for method {}".format(
                     exception.__class__.__name__, request.endpoint
@@ -153,7 +178,9 @@ class CustomExceptionHandler(ErrorHandler):
             response = get_error_body_response(
                 str(exception), status_code=HTTPStatusCodes.BAD_REQUEST.value
             )
-        elif isinstance(exception, (BaseORMException, ConfigurationError, DBConnectionError)):
+        elif isinstance(
+            exception, (BaseORMException, ConfigurationError, DBConnectionError)
+        ):
             error_logger.info(
                 "Handled exception {}, for method {}".format(
                     exception.__class__.__name__, request.endpoint
@@ -187,7 +214,7 @@ class CustomExceptionHandler(ErrorHandler):
             response = get_error_body_response(
                 exception.error,
                 getattr(exception, "status_code") or HTTPStatusCodes.FORBIDDEN.value,
-                error_id=getattr(exception, "error_id", None)
+                error_id=getattr(exception, "error_id", None),
             )
 
         return response
