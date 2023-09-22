@@ -1,6 +1,7 @@
 import datetime
 import importlib
 import inspect
+import os
 import pkgutil
 import random
 import socket
@@ -9,17 +10,15 @@ import uuid
 from functools import wraps
 from urllib.parse import urlparse
 
-import os
-from git import Repo
-
 import elasticapm
-
-from torpedo.constants import LogLevel
-from . import enums
 import ujson
+from git import Repo
 from sanic.log import logger
 
+from torpedo.constants import LogLevel
 from torpedo.exceptions import ForbiddenException
+
+from . import enums
 
 
 def get_current_time():
@@ -102,7 +101,7 @@ class ServiceAttribute:
     def setup_attributes(cls, _app):
         cls.name = _app.name
         cls.host = socket.gethostbyname(socket.gethostname())
-        cls.port = CONFIG.config.get('PORT')
+        cls.port = CONFIG.config.get("PORT")
         cls.branch_name, cls.current_tag = cls._get_current_working_repo()
 
     @classmethod
@@ -235,8 +234,9 @@ def get_user_from_header(headers):
     else:
         raise ForbiddenException(error={"message": "Invalid Auth Headers"})
 
+
 async def call_anonymous_function(function_to_call, *args, **kwargs):
     if inspect.iscoroutinefunction(function_to_call):
-        return (await function_to_call(*args, **kwargs))
+        return await function_to_call(*args, **kwargs)
     else:
         return function_to_call(*args, **kwargs)

@@ -5,7 +5,6 @@ from .task import AsyncTaskResponse
 
 
 class BaseHttpResponseParser:
-
     def __init__(self, data, status_code, headers, response_headers_list):
         self._data = data
         self._status_code = status_code

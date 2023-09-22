@@ -1,7 +1,8 @@
 import aiotask_context as context
 
 from .base_http_request import BaseHttpRequest
-from .constants import GLOBAL_HEADERS, X_SERVICE_NAME, X_SERVICE_VERSION, CONTENT_TYPE
+from .constants import (CONTENT_TYPE, GLOBAL_HEADERS, X_SERVICE_NAME,
+                        X_SERVICE_VERSION)
 from .parser import BaseApiResponseParser
 
 
@@ -10,7 +11,7 @@ class BaseApiRequest(BaseHttpRequest):
 
     @classmethod
     def get_global_headers(
-            cls,
+        cls,
     ):
         global_headers = context.get(GLOBAL_HEADERS) or dict()
         global_headers[X_SERVICE_NAME] = cls._config.get("NAME", "Unknown")

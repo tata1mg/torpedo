@@ -113,18 +113,19 @@ class JsonDecodeException(BaseSanicException):
 
 
 class ForbiddenException(BaseSanicException):
-    def __init__(self, error, status_code=HTTPStatusCodes.FORBIDDEN.value, meta=None, quiet=True):
+    def __init__(
+        self, error, status_code=HTTPStatusCodes.FORBIDDEN.value, meta=None, quiet=True
+    ):
         super().__init__(error, status_code, meta, quiet)
 
 
 class NotFoundException(BaseSanicException):
     def __init__(
-            self,
-            error,
-            status_code=HTTPStatusCodes.NOT_FOUND.value,
-            meta=None,
-            quiet=True,
-            error_id=None,
+        self,
+        error,
+        status_code=HTTPStatusCodes.NOT_FOUND.value,
+        meta=None,
+        quiet=True,
+        error_id=None,
     ):
         super().__init__(error, status_code, meta, quiet, error_id)
-

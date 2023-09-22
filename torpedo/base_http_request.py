@@ -1,5 +1,6 @@
 import asyncio
 import time
+
 import ujson as json
 from aiohttp import ClientSession, ContentTypeError, TCPConnector
 from multidict import MultiDict as WraperMultiDict
@@ -7,10 +8,10 @@ from sanic.log import access_logger as logger
 from yarl import URL
 
 from .common_utils import CONFIG
-from .constants import HTTPMethod, CONTENT_TYPE
+from .constants import CONTENT_TYPE, HTTPMethod
 from .exceptions import HTTPRequestException, HTTPRequestTimeoutException
-from .parser import BaseHttpResponseParser
 from .handlers import send_response
+from .parser import BaseHttpResponseParser
 
 SESSION = None
 
@@ -25,8 +26,10 @@ class BaseHttpRequest:
     async def get_session(cls):
         global SESSION
         if SESSION is None:
-            conn = TCPConnector(limit=(cls._config.get("CONCURRENCY_LIMIT") or 0),
-                                limit_per_host=(cls._config.get("CONCURRENCY_LIMIT_HOST") or 0))
+            conn = TCPConnector(
+                limit=(cls._config.get("CONCURRENCY_LIMIT") or 0),
+                limit_per_host=(cls._config.get("CONCURRENCY_LIMIT_HOST") or 0),
+            )
             SESSION = ClientSession(connector=conn)
         return SESSION
 
@@ -38,16 +41,16 @@ class BaseHttpRequest:
 
     @classmethod
     async def request(
-            cls,
-            method: str,
-            path: str,
-            data: dict = None,
-            query_params: dict = None,
-            timeout=None,
-            headers=None,
-            multipart=False,
-            response_headers_list=None,
-            purge_response_keys=False
+        cls,
+        method: str,
+        path: str,
+        data: dict = None,
+        query_params: dict = None,
+        timeout=None,
+        headers=None,
+        multipart=False,
+        response_headers_list=None,
+        purge_response_keys=False,
     ):
         url = cls._host + path
         url = URL(url)
@@ -73,8 +76,13 @@ class BaseHttpRequest:
         try:
             start_time = time.time()
             session = await cls.get_session()
-            async with session.request(method, str(url), data=data, headers=headers,
-                                       timeout=cls.request_timeout(timeout)) as response:
+            async with session.request(
+                method,
+                str(url),
+                data=data,
+                headers=headers,
+                timeout=cls.request_timeout(timeout),
+            ) as response:
                 resp_status_code = response.status
                 resp_headers = response.headers
                 try:
@@ -100,7 +108,9 @@ class BaseHttpRequest:
             raise HTTPRequestException({"message": exception_message})
 
         if purge_response_keys:
-            payload = send_response(data=payload, purge_response_keys=purge_response_keys)
+            payload = send_response(
+                data=payload, purge_response_keys=purge_response_keys
+            )
         response_data = cls.parse_response(
             payload, resp_status_code, resp_headers, response_headers_list
         )
