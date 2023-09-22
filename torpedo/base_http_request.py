@@ -10,6 +10,7 @@ from .common_utils import CONFIG
 from .constants import HTTPMethod, CONTENT_TYPE
 from .exceptions import HTTPRequestException, HTTPRequestTimeoutException
 from .parser import BaseHttpResponseParser
+from .handlers import send_response
 
 SESSION = None
 
@@ -37,15 +38,16 @@ class BaseHttpRequest:
 
     @classmethod
     async def request(
-        cls,
-        method: str,
-        path: str,
-        data: dict = None,
-        query_params: dict = None,
-        timeout=None,
-        headers=None,
-        multipart=False,
-        response_headers_list=None,
+            cls,
+            method: str,
+            path: str,
+            data: dict = None,
+            query_params: dict = None,
+            timeout=None,
+            headers=None,
+            multipart=False,
+            response_headers_list=None,
+            purge_response_keys=False
     ):
         url = cls._host + path
         url = URL(url)
@@ -71,27 +73,22 @@ class BaseHttpRequest:
         try:
             start_time = time.time()
             session = await cls.get_session()
-            response = await session.request(
-                method,
-                str(url),
-                data=data,
-                headers=headers,
-                timeout=cls.request_timeout(timeout),
-            )
+            async with session.request(method, str(url), data=data, headers=headers,
+                                       timeout=cls.request_timeout(timeout)) as response:
+                resp_status_code = response.status
+                resp_headers = response.headers
+                try:
+                    payload = await response.json()
+                except ContentTypeError:
+                    payload = await response.text()
+                    payload = json.loads(payload)
+                end_time = time.time()
 
-            try:
-                payload = await response.json()
-            except ContentTypeError:
-                payload = await response.text()
-                payload = json.loads(payload)
+                request_time = end_time - start_time
+                request_params["process_time"] = request_time
 
-            end_time = time.time()
-
-            request_time = end_time - start_time
-            request_params["process_time"] = request_time
-
-            logger.debug("{} - {}".format(str(url), request_time * 1000))
-            logger.debug(json.dumps(request_params))
+                logger.debug("{} - {}".format(str(url), request_time * 1000))
+                logger.debug(json.dumps(request_params))
         except asyncio.TimeoutError as exception:
             print(exception)
             exception_message = "Inter service request timeout error"
@@ -102,8 +99,10 @@ class BaseHttpRequest:
             request_params["exception"] = exception_message
             raise HTTPRequestException({"message": exception_message})
 
+        if purge_response_keys:
+            payload = send_response(data=payload, purge_response_keys=purge_response_keys)
         response_data = cls.parse_response(
-            payload, response.status, response.headers, response_headers_list
+            payload, resp_status_code, resp_headers, response_headers_list
         )
         return response_data
 
