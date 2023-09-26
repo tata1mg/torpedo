@@ -24,7 +24,6 @@ class CustomTimeLoggingFormatter(jsonlogger.JsonFormatter):
         self.datefmt = "%Y-%m-%dT%H:%M:%S"
         self.rename_fields = {
             "levelname": "loglevel",
-            "status": "status_code",
             "asctime": "timestamp"
         }
         self._skip_fields.update(
@@ -35,6 +34,7 @@ class CustomTimeLoggingFormatter(jsonlogger.JsonFormatter):
                 "elasticapm_trace_id": "elasticapm_trace_id",
                 "elasticapm_span_id": "elasticapm_span_id",
                 "elasticapm_event_dataset": "elasticapm_event_dataset",
+                "elasticapm_service_environment": "elasticapm_service_environment"
             }
         )
 
