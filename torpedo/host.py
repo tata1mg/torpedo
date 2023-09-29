@@ -2,6 +2,7 @@ from sanic import Sanic
 from sanic.log import logger
 from sanic.request import Request
 from sanic.router import Router
+from sanic_openapi import openapi3_blueprint
 from tortoise.contrib.sanic import register_tortoise
 import sentry_sdk
 from sentry_sdk.integrations.aiohttp import AioHttpIntegration
@@ -198,6 +199,10 @@ class Host:
 
         cls.register_exception_handler(app)
 
+        # Register openapi3_blueprint - to enable the OAS3 documentation for the exposed APIs
+        app.blueprint(openapi3_blueprint)
+
+        # Register app blueprints
         cls.register_app_blueprints(app)
 
         cls.setup_dynamic_methods()

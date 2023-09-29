@@ -14,3 +14,4 @@ tortoise-orm~=0.18
 pydantic~=1.9
 sentry-sdk~=1.7
 GitPython~=3.1
+sanic-openapi==21.12.0
