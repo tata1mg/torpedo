@@ -2,3 +2,4 @@ asynctest~=0.13
 pytest~=6.2
 pytest-sanic @ git+https://github.com/RasaHQ/pytest-sanic@fix_signal_issue#egg=pytest-sanic
 pytest-cov~=3.0
+moto~==4.2.7
